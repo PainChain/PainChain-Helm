@@ -1,0 +1,44 @@
+{{- if .Values.celeryBeat.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "painchain.fullname" . }}-celery-beat
+  labels:
+    {{- include "painchain.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-beat
+spec:
+  replicas: {{ .Values.celeryBeat.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "painchain.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery-beat
+  template:
+    metadata:
+      labels:
+        {{- include "painchain.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery-beat
+    spec:
+      containers:
+      - name: celery-beat
+        image: "{{ .Values.celeryBeat.image.repository }}:{{ .Values.celeryBeat.image.tag }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["celery", "-A", "celery_app", "beat", "--loglevel=info"]
+        env:
+        - name: REDIS_URL
+          value: "redis://{{ include "painchain.fullname" . }}-redis:6379/0"
+        - name: DB_HOST
+          value: {{ include "painchain.fullname" . }}-postgresql
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: {{ .Values.postgresql.auth.database | quote }}
+        - name: DB_USER
+          value: {{ .Values.postgresql.auth.username | quote }}
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "painchain.fullname" . }}-postgresql
+              key: password
+        resources:
+          {{- toYaml .Values.celeryBeat.resources | nindent 10 }}
+{{- end }}
