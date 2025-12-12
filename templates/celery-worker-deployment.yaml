@@ -18,27 +18,28 @@ spec:
         {{- include "painchain.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: celery-worker
     spec:
+      initContainers:
+      - name: wait-for-db
+        image: postgres:16-alpine
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h {{ include "painchain.fullname" . }}-postgresql -U {{ .Values.postgresql.auth.username }}; do
+            echo "Waiting for PostgreSQL to be ready..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
       containers:
       - name: celery-worker
         image: "{{ .Values.celeryWorker.image.repository }}:{{ .Values.celeryWorker.image.tag }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["celery", "-A", "celery_app", "worker", "--loglevel=info"]
         env:
+        - name: DATABASE_URL
+          value: "postgresql://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ include "painchain.fullname" . }}-postgresql:5432/{{ .Values.postgresql.auth.database }}"
         - name: REDIS_URL
           value: "redis://{{ include "painchain.fullname" . }}-redis:6379/0"
-        - name: DB_HOST
-          value: {{ include "painchain.fullname" . }}-postgresql
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          value: {{ .Values.postgresql.auth.database | quote }}
-        - name: DB_USER
-          value: {{ .Values.postgresql.auth.username | quote }}
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "painchain.fullname" . }}-postgresql
-              key: password
         resources:
           {{- toYaml .Values.celeryWorker.resources | nindent 10 }}
 {{- end }}

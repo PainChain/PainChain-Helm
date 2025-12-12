@@ -24,10 +24,10 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         env:
         - name: VITE_API_URL
-          value: "http://{{ include "painchain.fullname" . }}-api:{{ .Values.api.service.port }}"
+          value: {{ .Values.frontend.apiUrl | quote }}
         ports:
         - name: http
-          containerPort: 5173
+          containerPort: 5174
           protocol: TCP
         livenessProbe:
           httpGet:
