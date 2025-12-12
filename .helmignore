@@ -21,3 +21,12 @@
 .idea/
 *.tmproj
 .vscode/
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+# Docs
+OWNERS
+*.md
+!README.md
