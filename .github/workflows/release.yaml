@@ -31,7 +31,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Package and push chart with 'main' tag
@@ -41,10 +41,13 @@ jobs:
           # Temporarily set version to 0.0.0-main for bleeding edge
           sed -i 's/^version:.*/version: 0.0.0-main/' Chart.yaml
 
+          # Lowercase the repository owner for GHCR compatibility
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
           helm package .
-          helm push painchain-0.0.0-main.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+          helm push painchain-0.0.0-main.tgz oci://ghcr.io/${OWNER}/charts
 
           echo "✅ Successfully pushed painchain:0.0.0-main to GHCR"
           echo ""
           echo "🔧 Install bleeding edge with:"
-          echo "  helm install painchain oci://ghcr.io/${{ github.repository_owner }}/charts/painchain --version 0.0.0-main"
+          echo "  helm install painchain oci://ghcr.io/${OWNER}/charts/painchain --version 0.0.0-main"
